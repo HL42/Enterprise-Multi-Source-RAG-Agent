@@ -1,7 +1,7 @@
 "use client";
 
-import { useChat } from "@ai-sdk/react";
-import { useEffect, useRef, useState } from "react";
+import { useChat, type UIMessage } from "@ai-sdk/react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { getMessageText } from "./lib/messages";
 import { ChatHeader } from "./components/ChatHeader";
 import { EmptyState } from "./components/EmptyState";
@@ -9,7 +9,27 @@ import { ChatMessage } from "./components/ChatMessage";
 import { LoadingBubble } from "./components/LoadingBubble";
 import { ChatInput } from "./components/ChatInput";
 
+const STORAGE_KEY = "rag-agent-chat-messages";
+
+function loadSavedMessages(): UIMessage[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as UIMessage[]) : [];
+  } catch {
+    return [];
+  }
+}
+
 export default function ChatPage() {
+  const [hydrated, setHydrated] = useState(false);
+
+  // 首次渲染后从 localStorage 恢复，避免 SSR 水合不匹配
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
+
+  const persistedMessages = hydrated ? loadSavedMessages() : [];
+
   const { messages, sendMessage, status, error, clearError } = useChat();
   const [input, setInput] = useState("");
 
@@ -17,7 +37,14 @@ export default function ChatPage() {
   const prevMsgCountRef = useRef(0);
   const isLoading = status === "submitted" || status === "streaming";
 
-  // 新消息加入时 smooth scroll；streaming 过程中用 instant 避免多个动画互抢
+  // 持久化：messages 变化时写入 localStorage
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    }
+  }, [messages]);
+
+  // 滚动
   useEffect(() => {
     const isNewMessage = messages.length !== prevMsgCountRef.current;
     prevMsgCountRef.current = messages.length;
@@ -26,26 +53,27 @@ export default function ChatPage() {
     });
   }, [messages]);
 
-  // 一旦 assistant 已经开始输出文字，跳点 loader 就冗余了
+  const displayMessages = messages.length > 0 ? messages : persistedMessages;
+
   const lastMsg = messages.at(-1);
   const showLoader =
     isLoading &&
     !(lastMsg?.role === "assistant" && getMessageText(lastMsg).length > 0);
 
-  function handleSend() {
+  const handleSend = useCallback(() => {
     if (!input.trim() || isLoading) return;
     sendMessage({ text: input });
     setInput("");
-  }
+  }, [input, isLoading, sendMessage]);
 
   return (
     <div className="mx-auto flex h-dvh max-w-2xl flex-col px-4">
       <ChatHeader />
 
       <section className="flex-1 space-y-5 overflow-y-auto py-6">
-        {messages.length === 0 && <EmptyState />}
+        {displayMessages.length === 0 && <EmptyState />}
 
-        {messages.map((m) => (
+        {displayMessages.map((m) => (
           <ChatMessage key={m.id} message={m} />
         ))}
 

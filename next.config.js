@@ -1,10 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Next.js 15: serverExternalPackages（替代 experimental.serverComponentsExternalPackages）
+  // Next.js 14 自动忽略不认识的 key，不会报错
+  serverExternalPackages: ["@xenova/transformers", "onnxruntime-node"],
+
   webpack: (config, { isServer }) => {
     if (isServer) {
-      // onnxruntime-node 是 @xenova/transformers 的原生依赖
-      // webpack 不能打包原生.node模块，必须标记为外部依赖
-      // 正则形式确保匹配所有引用路径
       config.externals = [
         ...(Array.isArray(config.externals) ? config.externals : []),
         /^onnxruntime-node$/,

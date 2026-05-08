@@ -28,10 +28,15 @@ export async function withToolErrorHandling<T>(
       return { error: e.userMessage };
     }
     const message = e instanceof Error ? e.message : String(e);
-    console.error(`   ❌ [tool:${toolName}] 异常:`, message);
-    if (e instanceof Error && e.stack) {
-      console.error(e.stack);
+    if (message === "EMBEDDING_TIMEOUT") {
+      console.warn(`   ⏱️ [tool:${toolName}] Embedding 模型加载超时`);
+      return {
+        error:
+          "政策搜索服务正在初始化中，请稍后再试。在此期间，你可以问我员工数据或 IT 工单相关的问题。",
+      };
     }
+    console.error(`   ❌ [tool:${toolName}] 异常:`, message);
+    if (e instanceof Error && e.stack) console.error(e.stack);
     return { error: `工具执行异常: ${message}` };
   }
 }
