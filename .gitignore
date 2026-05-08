@@ -1,0 +1,20 @@
+# environment — contains API keys
+.env.local
+.env*.local
+
+# dependencies
+node_modules/
+
+# build output
+.next/
+out/
+
+# IDE
+.DS_Store
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# cache
+*.tsbuildinfo
