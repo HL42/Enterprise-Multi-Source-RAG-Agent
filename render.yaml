@@ -1,51 +1,26 @@
 # ============================================================
 # Render Blueprint — Enterprise HR/IT Support Agent
-# 部署为长期运行的 Node.js Web Service，非 Serverless
 # ============================================================
 
 services:
   - type: web
     name: rag-agent
     env: node
-    region: singapore                       # 新加坡节点，对国内/DeepSeek 延迟较低
-
-    branch: main
-    repo: https://github.com/HL42/Enterprise-Multi-Source-RAG-Agent.git
+    region: singapore
 
     buildCommand: npm install && npm run build
     startCommand: npm start
 
-    # Next.js 自动读取 Render 注入的 PORT
-    # 不需要手动指定端口
+    healthCheckPath: /
 
-    # ----------------------------------------------------------
-    # 环境变量 — 部署后去 Render Dashboard → Environment 手动填入值
-    # ----------------------------------------------------------
     envVars:
-      # DeepSeek API Key（服务端）
       - key: DEEPSEEK_API_KEY
         sync: false
-
-      # Supabase 项目 URL（服务端 + 客户端）
       - key: NEXT_PUBLIC_SUPABASE_URL
         sync: false
-
-      # Supabase service_role key（服务端，绕过 RLS）
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
-
-      # 可选：Supabase anon key（预留客户端直连，当前未使用）
       - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
         sync: false
 
-    # ----------------------------------------------------------
-    # 健康检查 — 根路由 / 返回 200 HTML
-    # ----------------------------------------------------------
-    healthCheckPath: /
-    # embedding 模型首次下载 ~30s，给足缓冲
-    startupTimeoutSeconds: 120
-
-    # ----------------------------------------------------------
-    # 免费套餐：仅保留 Web Service，不挂磁盘、不建 DB
-    # ----------------------------------------------------------
     plan: free
